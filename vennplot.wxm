@@ -1,0 +1,140 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 22.04.0 ] */
+/* [wxMaxima: comment start ]
+To plot n-circles at equal distance from each other, find coordinates using roots of complex function of order n
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+fun(n):=map(lambda([s],[realpart(s),imagpart(s)]),makelist(cos(2*k*%pi/n)+%i*sin(2*k*%pi/n),k,1,n))$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Create equations for circles using the coordinates obtained from fun())
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+liss(n):=map(lambda([w],(x-first(w))^2+(y-last(w))^2=n),fun(n))$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Collect all atoms from the relation provided to be plotted,
+eg, (a and b or not(c))=>[a,b,c], calls findatoms() to get job done
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+collectatoms(rel):=block(
+    [final:[]],
+    findatoms(rel),
+    flatten(reverse(final))
+)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Collects atoms in logical relation iteratively
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+findatoms(rel):=block(
+    [temp,ntemp],
+    ntemp:args(rel),
+    temp:sublist(ntemp,lambda([s],atom(s))),
+    if (temp#[]) then push(temp,final),
+    for item in temp do ntemp:delete(item,ntemp),
+    map(findatoms,ntemp)
+)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Substitutes the equations of circles into logical relation,
+maxima automatically handles it as (x^2+y^2<const) in case of inclusion and not(x^2+y^2<const)
+equal to (x^2+y^2>const) in case of exclusion
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+transform(eq,args,lis):=block(
+    [temp],
+    eq:map(lambda([s],lhs(s)<rhs(s)),eq),
+    temp:map("=",lis,eq),
+    args:psubst(temp,args),
+    args
+)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Creates a random color for each circle plotted
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+randomcolor():=block(
+    [temp:[],final:[]],
+    for i:1 thru 6 do (
+        temp:[],
+        for j:1 thru 4 do push(random(2),temp),
+        push(temp,final)
+    ),
+    final:psubst(
+        [
+            [0,0,0,0]=0,[0,0,0,1]=1,[0,0,1,0]=2,[0,0,1,1]=3,[0,1,0,0]=4,
+            [0,1,0,1]=5,[0,1,1,0]=6,[0,1,1,1]=7,[1,0,0,0]=8,[1,0,0,1]=9,
+            [1,0,1,0]=a,[1,0,1,1]=b,[1,1,0,0]=c,[1,1,0,1]=d,[1,1,1,0]=e,[1,1,1,1]=f
+        ],
+        final),
+    final
+)$
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: comment start ]
+Does plotting work for the logical relation and is the only function needed by user
+   [wxMaxima: comment end   ] */
+
+
+/* [wxMaxima: input   start ] */
+vennplot(args):=block(
+    [pts,reg,form,temp,wee,colr,i:1],
+    lis:collectatoms(args),
+    form:liss(length(lis)),
+    n:length(lis),
+    pts:(fun(n)),
+    temp:transform(form,args,lis),
+    wee:[
+        title=string(args),
+        proportional_axes=xy,
+        grid= true,
+        line_type= solid,
+        x_voxel = 50,
+        y_voxel = 50
+    ],
+    reg:apply(lambda([s],region(s,x,-(n+1),n+1,y,-(n+1),n+1)),[transform(form,args,lis)]),
+    wee:endcons(reg,wee),
+    wee:endcons(grid=false,wee),
+    wee:endcons(font="Courier-Oblique",wee),
+    wee:endcons(font_size=15,wee),
+    wee:endcons(line_width=3,wee),
+    for item in form do (
+        colr:apply(concat,cons("#",randomcolor())),
+        wee:endcons(key=string(part(lis,i)),wee),
+        wee:endcons(color= (colr),wee),
+        wee:endcons(label([string(part(lis,i)),first(part(pts,i)),last(part(pts,i))-0.4]),wee),
+        i:i+1,
+        wee:endcons(implicit(item,x,-(n+1),n+1,y,-(n+1),n+1),wee)
+    ),
+    apply(draw2d,wee)
+)$
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 22.04.0"$
